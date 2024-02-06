@@ -74,7 +74,9 @@ class TranscriptionServer:
                    backend="faster_whisper",
                    faster_whisper_custom_model_path=None,
                    whisper_tensorrt_path=None,
-                   trt_multilingual=False):
+                   trt_multilingual=False,
+                   log_transcript=False
+                   ):
         """
         Receive audio chunks from a client in an infinite loop.
         
@@ -132,7 +134,8 @@ class TranscriptionServer:
                     language=options["language"],
                     task=options["task"],
                     client_uid=options["uid"],
-                    model=whisper_tensorrt_path
+                    model=whisper_tensorrt_path,
+                    log_transcript=log_transcript
                 )
                 logging.info(f"Running TensorRT backend.")
             except Exception as e:
@@ -160,7 +163,8 @@ class TranscriptionServer:
                 client_uid=options["uid"],
                 model=options["model"],
                 initial_prompt=options.get("initial_prompt"),
-                vad_parameters=options.get("vad_parameters")
+                vad_parameters=options.get("vad_parameters"),
+                log_transcript=log_transcript
             )
             logging.info(f"Running faster_whisper backend.")
         
@@ -218,7 +222,8 @@ class TranscriptionServer:
             backend="tensorrt", 
             faster_whisper_custom_model_path=None,
             whisper_tensorrt_path=None, 
-            trt_multilingual=False
+            trt_multilingual=False,
+            log_transcript=False
         ):
         """
         Run the transcription server.
@@ -233,7 +238,8 @@ class TranscriptionServer:
                 backend=backend,
                 faster_whisper_custom_model_path=faster_whisper_custom_model_path,
                 whisper_tensorrt_path=whisper_tensorrt_path,
-                trt_multilingual=trt_multilingual
+                trt_multilingual=trt_multilingual,
+                log_transcript=log_transcript
             ),
             host,
             port
@@ -328,6 +334,10 @@ class ServeClientBase(object):
 
         """
         logging.info("Cleaning up.")
+        if self.log_transcript:
+            logging.info(f"Saving transcript to {self.client_uid}.txt")
+            with open(f"{self.client_uid}.txt", "w") as f:
+                f.write("".join(self.text))
         self.exit = True
 
 
@@ -368,7 +378,8 @@ class ServeClientTensorRT(ServeClientBase):
         multilingual=False,
         language=None, 
         client_uid=None,
-        model=None
+        model=None,
+        log_transcript=False
         ):
         """
         Initialize a ServeClient instance.
@@ -388,6 +399,7 @@ class ServeClientTensorRT(ServeClientBase):
         super().__init__(client_uid, websocket)
         self.language = language if multilingual else "en"
         self.task = task
+        self.log_transcript = log_transcript
         self.eos = False
         self.transcriber = WhisperTRTLLM(
             model, 
@@ -563,6 +575,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         model="small.en",
         initial_prompt=None,
         vad_parameters=None,
+        log_transcript=False,
         ):
         """
         Initialize a ServeClient instance.
@@ -589,6 +602,7 @@ class ServeClientFasterWhisper(ServeClientBase):
             self.model_size_or_path = model
         self.language = "en" if self.model_size_or_path.endswith("en") else language
         self.task = task
+        self.log_transcript = log_transcript
         self.initial_prompt = initial_prompt
         self.vad_parameters = vad_parameters or {"threshold": 0.5}
         self.no_speech_thresh = 0.45
