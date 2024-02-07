@@ -43,14 +43,14 @@ class TranscriptionServer:
 
     RATE = 16000
 
-    def __init__(self):
+    def __init__(self, max_clients=4, max_connection_time=600):
         # voice activity detection model
         
         self.clients = {}
         self.websockets = {}
         self.clients_start_time = {}
-        self.max_clients = 4
-        self.max_connection_time = 600
+        self.max_clients = max_clients
+        self.max_connection_time = max_connection_time
 
     def get_wait_time(self):
         """
@@ -394,6 +394,8 @@ class ServeClientTensorRT(ServeClientBase):
             multilingual (bool, optional): Whether the client supports multilingual transcription. Defaults to False.
             language (str, optional): The language for transcription. Defaults to None.
             client_uid (str, optional): A unique identifier for the client. Defaults to None.
+            model (str, optional): The name of the Whisper model to use. Defaults to None.
+            log_transcript (bool, optional): Whether to log the transcript. Defaults to False.
 
         """
         super().__init__(client_uid, websocket)
@@ -589,6 +591,10 @@ class ServeClientFasterWhisper(ServeClientBase):
             device (str, optional): The device type for Whisper, "cuda" or "cpu". Defaults to None.
             language (str, optional): The language for transcription. Defaults to None.
             client_uid (str, optional): A unique identifier for the client. Defaults to None.
+            model (str, optional): The name of the Whisper model to use. Defaults to small.en.
+            initial_prompt (str, optional): The initial prompt for transcription. Defaults to None.
+            vad_parameters (dict, optional): The VAD parameters for transcription. Defaults to None.
+            log_transcript (bool, optional): Whether to log the transcript. Defaults to False.
 
         """
         super().__init__(client_uid, websocket)
