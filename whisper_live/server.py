@@ -20,6 +20,7 @@ import functools
 
 from whisper_live.vad import VoiceActivityDetection
 from whisper_live.transcriber import WhisperModel
+from whisper_live.text_processing import TranscriptProcessor
 try:
     from whisper_live.transcriber_tensorrt import WhisperTRTLLM
 except Exception as e:
@@ -336,7 +337,10 @@ class ServeClientBase(object):
         logging.info("Cleaning up.")
         if self.log_transcript:
             logging.info(f"Saving transcript to {self.client_uid}.txt")
-            with open(f"{self.client_uid}.txt", "w") as f:
+            transcript_text = "".join(self.text)
+            text_processor = TranscriptProcessor()
+            transcript_name = text_processor.generate_text_name(transcript_text)
+            with open(f"{transcript_name}.text", "w") as f:
                 f.write("".join(self.text))
         self.exit = True
 
